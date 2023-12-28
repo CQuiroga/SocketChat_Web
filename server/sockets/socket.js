@@ -20,15 +20,18 @@ io.on('connection', (client) => {
         usuarios.agregarPersona( client.id, data.nombre, data.sala );
 
         client.broadcast.to( data.sala ).emit( 'listaPersonas', usuarios.getPersonasPorSala( data.sala ));
+        // Para notificar al backend sobre quién se desconectó
+        client.broadcast.to( data.sala ).emit( 'crearMensaje', crearMensaje( 'Admin', `${ data.nombre }, se unió el chat`));
         callback( usuarios.getPersonasPorSala( data.sala ) );
     });
 
-    client.on('crearMensaje', (data) => {
+    client.on('crearMensaje', (data, callback ) => {
 
         const persona = usuarios.getPersona( client.id );
 
         const mensaje = crearMensaje( persona.nombre , data.mensaje );
-        client.broadcast.to( persona.sala ).emit( 'crearMensaje', mensaje)
+        client.broadcast.to( persona.sala ).emit( 'crearMensaje', mensaje);
+        callback( mensaje );
     })
 
     // Para desconectar del chat
@@ -36,7 +39,7 @@ io.on('connection', (client) => {
         const personaBorrada = usuarios.borrarPersona( client.id );
 
         // Para notificar al backend sobre quién se desconectó
-        client.broadcast.to( personaBorrada.sala ).emit( 'crearMensaje', crearMensaje( 'Admin dice: ', `${ personaBorrada.nombre }, abandonó el chat`));
+        client.broadcast.to( personaBorrada.sala ).emit( 'crearMensaje', crearMensaje( 'Admin', `${ personaBorrada.nombre }, abandonó el chat`));
 
         // Para mostrar todas las personas que están conectadas
         client.broadcast.to( personaBorrada.sala ).emit( 'listaPersonas', usuarios.getPersonasPorSala( personaBorrada.sala ));
